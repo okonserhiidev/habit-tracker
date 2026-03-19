@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import Colors from '../constants/Colors';
 import { setItem } from '../utils/storage';
+import { useAuthStore } from '../store/useAuthStore';
 
 const { width } = Dimensions.get('window');
 
@@ -51,7 +52,12 @@ export default function OnboardingScreen() {
 
   const finish = async () => {
     await setItem('onboardingCompleted', 'true');
-    router.replace('/(auth)/login' as any);
+    const { isAuthenticated } = useAuthStore.getState();
+    if (isAuthenticated) {
+      router.replace('/(tabs)' as any);
+    } else {
+      router.replace('/(auth)/login' as any);
+    }
   };
 
   const isLastSlide = currentIndex === slides.length - 1;

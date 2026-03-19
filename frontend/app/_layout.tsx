@@ -10,7 +10,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuthStore } from '../store/useAuthStore';
 import Colors from '../constants/Colors';
-import { getItem } from '../utils/storage';
+import { getItem, setItem } from '../utils/storage';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -50,7 +50,13 @@ function InitialRedirect() {
     didRedirect.current = true;
 
     if (!onboardingDone) {
-      router.replace('/onboarding' as any);
+      if (isAuthenticated) {
+        // Already logged in but onboarding flag missing — skip onboarding
+        setItem('onboardingCompleted', 'true');
+        router.replace('/(tabs)' as any);
+      } else {
+        router.replace('/onboarding' as any);
+      }
     } else if (isAuthenticated) {
       router.replace('/(tabs)' as any);
     } else {
