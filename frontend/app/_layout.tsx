@@ -29,7 +29,7 @@ function InitialRedirect() {
   const { isAuthenticated, isLoading, restoreSession } = useAuthStore();
   const router = useRouter();
   const didRedirect = useRef(false);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
   useEffect(() => {
     restoreSession();
@@ -39,26 +39,26 @@ function InitialRedirect() {
     let cancelled = false;
     getItem('onboardingCompleted').then((value) => {
       if (cancelled) return;
-      if (!value) {
-        router.replace('/onboarding' as any);
-      }
-      setCheckingOnboarding(false);
+      setOnboardingDone(!!value);
     });
     return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
-    if (isLoading || checkingOnboarding || didRedirect.current) return;
+    if (onboardingDone === null || isLoading || didRedirect.current) return;
 
     didRedirect.current = true;
-    if (isAuthenticated) {
+
+    if (!onboardingDone) {
+      router.replace('/onboarding' as any);
+    } else if (isAuthenticated) {
       router.replace('/(tabs)' as any);
     } else {
       router.replace('/(auth)/login' as any);
     }
-  }, [isLoading, isAuthenticated, checkingOnboarding]);
+  }, [isLoading, isAuthenticated, onboardingDone]);
 
-  if (isLoading || checkingOnboarding) {
+  if (isLoading || onboardingDone === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FA' }}>
         <ActivityIndicator size="large" color={Colors.primary} />
