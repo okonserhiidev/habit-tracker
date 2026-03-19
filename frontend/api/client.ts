@@ -8,7 +8,7 @@ const BASE_URL = __DEV__
   ? Platform.OS === 'web'
     ? 'http://localhost:8080/api'
     : `http://${DEV_IP}:8080/api`
-  : 'https://api.habittracker.app/api';
+  : `${process.env.EXPO_PUBLIC_API_URL}/api`;
 
 const api = axios.create({
   baseURL: BASE_URL,
