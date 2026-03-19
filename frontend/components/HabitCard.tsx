@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Habit } from '../api/habitApi';
 import Colors from '../constants/Colors';
 
@@ -23,6 +24,25 @@ function getFrequencyLabel(habit: Habit): string {
 export default function HabitCard({ habit, onToggle, onPress }: HabitCardProps) {
   const completed = habit.completedToday;
   const freqLabel = getFrequencyLabel(habit);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handleToggle = () => {
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 1.35,
+        useNativeDriver: true,
+        speed: 60,
+        bounciness: 12,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 8,
+      }),
+    ]).start();
+    onToggle();
+  };
 
   return (
     <TouchableOpacity
@@ -31,17 +51,19 @@ export default function HabitCard({ habit, onToggle, onPress }: HabitCardProps) 
       activeOpacity={0.7}
     >
       <View style={[styles.topRow, completed && styles.topRowCompleted]}>
-        <TouchableOpacity
-          style={[
-            styles.checkbox,
-            { borderColor: habit.color },
-            completed && { backgroundColor: habit.color },
-          ]}
-          onPress={onToggle}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          {completed && <Text style={styles.checkmark}>✓</Text>}
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <TouchableOpacity
+            style={[
+              styles.checkbox,
+              { borderColor: habit.color },
+              completed && { backgroundColor: habit.color },
+            ]}
+            onPress={handleToggle}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            {completed && <Text style={styles.checkmark}>✓</Text>}
+          </TouchableOpacity>
+        </Animated.View>
 
         <View style={styles.content}>
           <Text style={styles.name}>{habit.name}</Text>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useHabits, useCompleteHabit, useUncompleteHabit } from '../../hooks/useHabits';
@@ -54,6 +55,33 @@ export default function HomeScreen() {
 
   const greeting = getGreeting(user?.email ?? user?.name);
   const dailyQuote = QUOTES[new Date().getDay()];
+
+  // Perfect Day animation
+  const isPerfectDay = habits.length > 0 && completedCount === habits.length;
+  const bannerAnim = useRef(new Animated.Value(-120)).current;
+  const bannerShownRef = useRef(false);
+
+  useEffect(() => {
+    if (isPerfectDay && !bannerShownRef.current) {
+      bannerShownRef.current = true;
+      Animated.sequence([
+        Animated.spring(bannerAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          speed: 14,
+          bounciness: 10,
+        }),
+        Animated.delay(2800),
+        Animated.timing(bannerAnim, {
+          toValue: -120,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        bannerShownRef.current = false;
+      });
+    }
+  }, [isPerfectDay]);
 
   const progressLabel =
     habits.length > 0 && completedCount === habits.length
@@ -152,6 +180,19 @@ export default function HomeScreen() {
       >
         <Text style={styles.fabText}>＋</Text>
       </TouchableOpacity>
+
+      {/* Perfect Day banner */}
+      <Animated.View
+        style={[styles.perfectDayBanner, { transform: [{ translateY: bannerAnim }] }]}
+        pointerEvents="none"
+      >
+        <Text style={styles.perfectDayEmoji}>🎉</Text>
+        <View>
+          <Text style={styles.perfectDayTitle}>Perfect Day!</Text>
+          <Text style={styles.perfectDaySubtitle}>All habits complete</Text>
+        </View>
+        <Text style={styles.perfectDayEmoji}>🔥</Text>
+      </Animated.View>
     </View>
   );
 }
@@ -240,5 +281,38 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 26,
     fontWeight: '400',
+  },
+  perfectDayBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 16,
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    marginTop: 52,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
+    zIndex: 100,
+  },
+  perfectDayTitle: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  perfectDaySubtitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginTop: 1,
+  },
+  perfectDayEmoji: {
+    fontSize: 28,
   },
 });
