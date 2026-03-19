@@ -21,21 +21,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Habits',
+          title: 'Today',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✓</Text>,
         }}
       />
       <Tabs.Screen
         name="analytics"
         options={{
-          title: 'Analytics',
+          title: 'Progress',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📊</Text>,
         }}
       />
       <Tabs.Screen
         name="two"
         options={{
-          title: 'Settings',
+          title: 'Profile',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙</Text>,
         }}
       />

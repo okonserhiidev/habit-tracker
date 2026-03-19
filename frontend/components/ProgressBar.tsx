@@ -4,31 +4,32 @@ import Colors from '../constants/Colors';
 interface ProgressBarProps {
   completed: number;
   total: number;
+  label?: string;
 }
 
-export default function ProgressBar({ completed, total }: ProgressBarProps) {
+export default function ProgressBar({ completed, total, label }: ProgressBarProps) {
   const progress = total > 0 ? completed / total : 0;
-  const isPerfect = completed === total && total > 0;
+  const percentage = Math.round(progress * 100);
 
   return (
     <View style={styles.container}>
-      <View style={styles.textRow}>
-        <Text style={styles.label}>
-          {isPerfect ? 'Perfect Day!' : `${completed} of ${total}`}
-        </Text>
-        <Text style={styles.percentage}>{Math.round(progress * 100)}%</Text>
+      <View style={styles.barRow}>
+        <View style={styles.track}>
+          <View
+            style={[
+              styles.fill,
+              {
+                width: `${percentage}%`,
+                backgroundColor: Colors.primary,
+              },
+            ]}
+          />
+        </View>
+        <Text style={styles.percentage}>{percentage}%</Text>
       </View>
-      <View style={styles.track}>
-        <View
-          style={[
-            styles.fill,
-            {
-              width: `${progress * 100}%`,
-              backgroundColor: isPerfect ? Colors.success : Colors.primary,
-            },
-          ]}
-        />
-      </View>
+      {label ? (
+        <Text style={styles.label}>{label}</Text>
+      ) : null}
     </View>
   );
 }
@@ -37,29 +38,32 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
   },
-  textRow: {
+  barRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  percentage: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
+    alignItems: 'center',
+    gap: 8,
   },
   track: {
-    height: 8,
-    backgroundColor: Colors.light.border,
-    borderRadius: 4,
+    flex: 1,
+    height: 10,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 5,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 5,
+  },
+  percentage: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primary,
+    minWidth: 38,
+    textAlign: 'right',
+  },
+  label: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    marginTop: 5,
   },
 });

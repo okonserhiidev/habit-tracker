@@ -20,6 +20,15 @@ const DAY_SHORT: Record<string, string> = {
   FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun',
 };
 
+const TEMPLATES = [
+  { name: 'Drink water 💧', description: 'Stay hydrated throughout the day' },
+  { name: 'Read 📚', description: 'Read for at least 10 minutes' },
+  { name: 'Exercise 🏃', description: 'Get moving for 30 minutes' },
+  { name: 'Meditate 🧘', description: 'Take a mindful break' },
+];
+
+const EMOJIS = ['🏃', '📚', '💧', '🧘', '🥗', '😴', '💊', '🎯', '✍️', '🎵', '🚴', '🌿'];
+
 export default function CreateHabitScreen() {
   const router = useRouter();
   const createMutation = useCreateHabit();
@@ -31,6 +40,8 @@ export default function CreateHabitScreen() {
   const [customDays, setCustomDays] = useState<string[]>([]);
   const [identityText, setIdentityText] = useState('');
   const [miniVersion, setMiniVersion] = useState('');
+  const [emoji, setEmoji] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const toggleDay = (day: string) => {
     setCustomDays((prev) =>
@@ -38,12 +49,19 @@ export default function CreateHabitScreen() {
     );
   };
 
+  const handleTemplate = (template: { name: string; description: string }) => {
+    setName(template.name);
+    setDescription(template.description);
+  };
+
   const handleCreate = async () => {
     if (!name.trim()) return;
     if (frequency === 'CUSTOM' && customDays.length === 0) return;
 
+    const finalName = emoji ? `${emoji} ${name.trim()}` : name.trim();
+
     await createMutation.mutateAsync({
-      name: name.trim(),
+      name: finalName,
       description: description.trim() || undefined,
       color,
       frequency,
@@ -62,6 +80,45 @@ export default function CreateHabitScreen() {
       </TouchableOpacity>
 
       <Text style={styles.title}>New Habit</Text>
+
+      {/* Quick Templates */}
+      <View style={styles.field}>
+        <Text style={styles.label}>Quick Templates</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
+          {TEMPLATES.map((t) => (
+            <TouchableOpacity
+              key={t.name}
+              style={styles.templateChip}
+              onPress={() => handleTemplate(t)}
+            >
+              <Text style={styles.templateChipText}>{t.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Emoji Picker */}
+      <View style={styles.field}>
+        <Text style={styles.label}>Emoji (optional)</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiScroll}>
+          {/* No emoji option */}
+          <TouchableOpacity
+            style={[styles.emojiChip, emoji === '' && styles.emojiChipSelected]}
+            onPress={() => setEmoji('')}
+          >
+            <Text style={styles.emojiChipText}>—</Text>
+          </TouchableOpacity>
+          {EMOJIS.map((e) => (
+            <TouchableOpacity
+              key={e}
+              style={[styles.emojiChip, emoji === e && styles.emojiChipSelected]}
+              onPress={() => setEmoji(e)}
+            >
+              <Text style={styles.emojiChipText}>{e}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Name */}
       <View style={styles.field}>
@@ -148,31 +205,46 @@ export default function CreateHabitScreen() {
         </View>
       )}
 
-      {/* Identity (Atomic Habits) */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Who do I want to become?</Text>
-        <Text style={styles.hint}>From "Atomic Habits": focus on identity, not results</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. I am a runner"
-          placeholderTextColor="#9CA3AF"
-          value={identityText}
-          onChangeText={setIdentityText}
-        />
-      </View>
+      {/* Advanced toggle */}
+      <TouchableOpacity
+        style={styles.advancedToggle}
+        onPress={() => setShowAdvanced((v) => !v)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.advancedToggleText}>
+          {showAdvanced ? '▲ Advanced (Identity & Mini habits)' : '＋ Advanced (Identity & Mini habits)'}
+        </Text>
+      </TouchableOpacity>
 
-      {/* Mini version (2-minute rule) */}
-      <View style={styles.field}>
-        <Text style={styles.label}>2-Minute Version</Text>
-        <Text style={styles.hint}>What's the smallest version of this habit?</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. Put on running shoes"
-          placeholderTextColor="#9CA3AF"
-          value={miniVersion}
-          onChangeText={setMiniVersion}
-        />
-      </View>
+      {showAdvanced && (
+        <>
+          {/* Identity (Atomic Habits) */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Who do I want to become?</Text>
+            <Text style={styles.hint}>From "Atomic Habits": focus on identity, not results</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. I am a runner"
+              placeholderTextColor="#9CA3AF"
+              value={identityText}
+              onChangeText={setIdentityText}
+            />
+          </View>
+
+          {/* Mini version (2-minute rule) */}
+          <View style={styles.field}>
+            <Text style={styles.label}>2-Minute Version</Text>
+            <Text style={styles.hint}>What's the smallest version of this habit?</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Put on running shoes"
+              placeholderTextColor="#9CA3AF"
+              value={miniVersion}
+              onChangeText={setMiniVersion}
+            />
+          </View>
+        </>
+      )}
 
       {/* Submit */}
       <TouchableOpacity
@@ -239,6 +311,44 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  templateScroll: {
+    flexGrow: 0,
+  },
+  templateChip: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  templateChipText: {
+    fontSize: 14,
+    color: Colors.light.text,
+    fontWeight: '500',
+  },
+  emojiScroll: {
+    flexGrow: 0,
+  },
+  emojiChip: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: Colors.light.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  emojiChipSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: '#EDE9FE',
+  },
+  emojiChipText: {
+    fontSize: 20,
+  },
   freqRow: {
     flexDirection: 'row',
     gap: 8,
@@ -280,6 +390,20 @@ const styles = StyleSheet.create({
   },
   dayTextActive: {
     color: '#fff',
+  },
+  advancedToggle: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    alignItems: 'center',
+  },
+  advancedToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
   },
   submitButton: {
     padding: 16,

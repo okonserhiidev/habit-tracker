@@ -13,7 +13,7 @@ export default {
   light: {
     text: '#1A1A2E',
     textSecondary: '#6B7280',
-    background: '#F8F9FA',
+    background: '#F8F9FB',
     card: '#FFFFFF',
     border: '#E5E7EB',
     tint: primary,

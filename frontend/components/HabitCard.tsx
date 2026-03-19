@@ -1,7 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Habit } from '../api/habitApi';
 import Colors from '../constants/Colors';
-import HabitMonthStrip from './HabitMonthStrip';
 
 interface HabitCardProps {
   habit: Habit;
@@ -9,12 +8,29 @@ interface HabitCardProps {
   onPress: () => void;
 }
 
+function getFrequencyLabel(habit: Habit): string {
+  if (habit.frequency === 'DAILY') return 'Daily';
+  if (habit.frequency === 'WEEKLY') return 'Weekly';
+  if (habit.frequency === 'CUSTOM') {
+    if (habit.customDays && habit.customDays.length > 0) {
+      return habit.customDays.map((d: string) => d.slice(0, 3)).join(', ');
+    }
+    return 'Custom';
+  }
+  return '';
+}
+
 export default function HabitCard({ habit, onToggle, onPress }: HabitCardProps) {
   const completed = habit.completedToday;
+  const freqLabel = getFrequencyLabel(habit);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.topRow}>
+    <TouchableOpacity
+      style={[styles.card, { borderLeftColor: habit.color }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.topRow, completed && styles.topRowCompleted]}>
         <TouchableOpacity
           style={[
             styles.checkbox,
@@ -28,14 +44,15 @@ export default function HabitCard({ habit, onToggle, onPress }: HabitCardProps) 
         </TouchableOpacity>
 
         <View style={styles.content}>
-          <Text style={[styles.name, completed && styles.nameCompleted]}>
-            {habit.name}
-          </Text>
+          <Text style={styles.name}>{habit.name}</Text>
           {habit.description && (
             <Text style={styles.description} numberOfLines={1}>
               {habit.description}
             </Text>
           )}
+          {freqLabel ? (
+            <Text style={styles.frequency}>{freqLabel}</Text>
+          ) : null}
         </View>
 
         {(habit.currentStreak ?? 0) > 0 && (
@@ -45,8 +62,6 @@ export default function HabitCard({ habit, onToggle, onPress }: HabitCardProps) 
           </View>
         )}
       </View>
-
-      <HabitMonthStrip habitId={habit.id} color={habit.color} />
     </TouchableOpacity>
   );
 }
@@ -58,6 +73,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     marginBottom: 12,
+    borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -68,10 +84,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  topRowCompleted: {
+    opacity: 0.45,
+  },
   checkbox: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: 17,
     borderWidth: 2.5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -90,14 +109,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.light.text,
   },
-  nameCompleted: {
-    textDecorationLine: 'line-through',
-    color: Colors.light.textSecondary,
-  },
   description: {
     fontSize: 13,
     color: Colors.light.textSecondary,
     marginTop: 2,
+  },
+  frequency: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    marginTop: 3,
   },
   streakBadge: {
     flexDirection: 'row',

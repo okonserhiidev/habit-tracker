@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useHabit, useHabitStats, useCompleteHabit, useUncompleteHabit, useDeleteHabit } from '../../hooks/useHabits';
@@ -13,6 +14,7 @@ export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const habitId = Number(id);
   const router = useRouter();
+  const [manageOpen, setManageOpen] = useState(false);
 
   const { data: habit, isLoading: habitLoading } = useHabit(habitId);
   const { data: stats, isLoading: statsLoading } = useHabitStats(habitId);
@@ -105,6 +107,10 @@ export default function HabitDetailScreen() {
     );
   }
 
+  const currentStreak = stats?.currentStreak ?? 0;
+  const bestStreak = stats?.bestStreak ?? 0;
+  const streakProgress = bestStreak > 0 ? Math.min(currentStreak / bestStreak, 1) : 0;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -118,12 +124,33 @@ export default function HabitDetailScreen() {
         )}
       </View>
 
-      {/* Streak */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>🔥 {stats?.currentStreak ?? 0}</Text>
-          <Text style={styles.statLabel}>Current Streak</Text>
+      {/* Streak highlight */}
+      <View style={[styles.streakHighlightCard, { borderColor: habit.color }]}>
+        <Text style={styles.streakBigNumber}>🔥 {currentStreak}</Text>
+        <Text style={styles.streakSubtitle}>day streak 🔥</Text>
+      </View>
+
+      {/* Personal best progress */}
+      <View style={styles.personalBestCard}>
+        <Text style={styles.personalBestTitle}>Streak progress to personal best</Text>
+        <View style={styles.pbBarRow}>
+          <View style={styles.pbTrack}>
+            <View
+              style={[
+                styles.pbFill,
+                {
+                  width: `${Math.round(streakProgress * 100)}%`,
+                  backgroundColor: habit.color,
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.pbLabel}>{currentStreak}/{bestStreak}</Text>
         </View>
+      </View>
+
+      {/* Stats */}
+      <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{stats?.bestStreak ?? 0}</Text>
           <Text style={styles.statLabel}>Best Streak</Text>
@@ -197,53 +224,65 @@ export default function HabitDetailScreen() {
         </View>
       )}
 
-      {/* Actions */}
-      <View style={styles.actionsSection}>
-        <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-          <Text style={styles.editButtonText}>✏️  Edit Habit</Text>
-        </TouchableOpacity>
+      {/* Manage Habit collapsible */}
+      <TouchableOpacity
+        style={styles.manageToggle}
+        onPress={() => setManageOpen((v) => !v)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.manageToggleText}>
+          {manageOpen ? '▲ Manage Habit' : '⚙️ Manage Habit'}
+        </Text>
+      </TouchableOpacity>
 
-        {/* Freeze Day */}
-        <TouchableOpacity
-          style={[
-            styles.freezeButton,
-            (freezeInfo?.remainingThisWeek === 0 || freezeMutation.isPending) && styles.buttonDisabledOpacity,
-          ]}
-          onPress={() => freezeMutation.mutate()}
-          disabled={freezeMutation.isPending || freezeInfo?.remainingThisWeek === 0}
-        >
-          {freezeMutation.isPending ? (
-            <ActivityIndicator color="#3B82F6" />
-          ) : (
-            <Text style={styles.freezeButtonText}>
-              ❄️  Freeze Today
-              {freezeInfo !== undefined
-                ? `  (${freezeInfo.remainingThisWeek} left this week)`
-                : ''}
-            </Text>
-          )}
-        </TouchableOpacity>
+      {manageOpen && (
+        <View style={styles.actionsSection}>
+          <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+            <Text style={styles.editButtonText}>✏️  Edit Habit</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.archiveButton}
-          onPress={handleArchive}
-          disabled={archiveMutation.isPending}
-        >
-          <Text style={styles.archiveButtonText}>📦  Archive Habit</Text>
-        </TouchableOpacity>
+          {/* Freeze Day */}
+          <TouchableOpacity
+            style={[
+              styles.freezeButton,
+              (freezeInfo?.remainingThisWeek === 0 || freezeMutation.isPending) && styles.buttonDisabledOpacity,
+            ]}
+            onPress={() => freezeMutation.mutate()}
+            disabled={freezeMutation.isPending || freezeInfo?.remainingThisWeek === 0}
+          >
+            {freezeMutation.isPending ? (
+              <ActivityIndicator color="#3B82F6" />
+            ) : (
+              <Text style={styles.freezeButtonText}>
+                ❄️  Freeze Today
+                {freezeInfo !== undefined
+                  ? `  (${freezeInfo.remainingThisWeek} left this week)`
+                  : ''}
+              </Text>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={handleDelete}
-          disabled={deleteMutation.isPending}
-        >
-          {deleteMutation.isPending ? (
-            <ActivityIndicator color={Colors.danger} />
-          ) : (
-            <Text style={styles.deleteButtonText}>🗑️  Delete Habit</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.archiveButton}
+            onPress={handleArchive}
+            disabled={archiveMutation.isPending}
+          >
+            <Text style={styles.archiveButtonText}>📦  Archive Habit</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDelete}
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? (
+              <ActivityIndicator color={Colors.danger} />
+            ) : (
+              <Text style={styles.deleteButtonText}>🗑️  Delete Habit</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -285,6 +324,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textSecondary,
     marginTop: 4,
+  },
+  streakHighlightCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  streakBigNumber: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: Colors.streak,
+  },
+  streakSubtitle: {
+    fontSize: 16,
+    color: Colors.light.textSecondary,
+    marginTop: 4,
+  },
+  personalBestCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+  },
+  personalBestTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+    marginBottom: 10,
+  },
+  pbBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pbTrack: {
+    flex: 1,
+    height: 10,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  pbFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  pbLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.light.textSecondary,
+    minWidth: 40,
+    textAlign: 'right',
   },
   statsRow: {
     flexDirection: 'row',
@@ -385,9 +475,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.primaryDark,
   },
+  manageToggle: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  manageToggleText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
   actionsSection: {
     gap: 12,
-    marginTop: 8,
     paddingBottom: 16,
   },
   freezeButton: {

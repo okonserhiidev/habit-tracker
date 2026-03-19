@@ -35,6 +35,7 @@ export default function EditHabitScreen() {
   const [customDays, setCustomDays] = useState<string[]>([]);
   const [identityText, setIdentityText] = useState('');
   const [miniVersion, setMiniVersion] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (habit) {
@@ -45,6 +46,10 @@ export default function EditHabitScreen() {
       setCustomDays(habit.customDays ?? []);
       setIdentityText(habit.identityText ?? '');
       setMiniVersion(habit.miniVersion ?? '');
+      // Default showAdvanced to true if habit already has these fields
+      if (habit.identityText || habit.miniVersion) {
+        setShowAdvanced(true);
+      }
     }
   }, [habit]);
 
@@ -168,29 +173,44 @@ export default function EditHabitScreen() {
         </View>
       )}
 
-      <View style={styles.field}>
-        <Text style={styles.label}>Who do I want to become?</Text>
-        <Text style={styles.hint}>From "Atomic Habits": focus on identity, not results</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. I am a runner"
-          placeholderTextColor="#9CA3AF"
-          value={identityText}
-          onChangeText={setIdentityText}
-        />
-      </View>
+      {/* Advanced toggle */}
+      <TouchableOpacity
+        style={styles.advancedToggle}
+        onPress={() => setShowAdvanced((v) => !v)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.advancedToggleText}>
+          {showAdvanced ? '▲ Advanced (Identity & Mini habits)' : '＋ Advanced (Identity & Mini habits)'}
+        </Text>
+      </TouchableOpacity>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>2-Minute Version</Text>
-        <Text style={styles.hint}>What's the smallest version of this habit?</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. Put on running shoes"
-          placeholderTextColor="#9CA3AF"
-          value={miniVersion}
-          onChangeText={setMiniVersion}
-        />
-      </View>
+      {showAdvanced && (
+        <>
+          <View style={styles.field}>
+            <Text style={styles.label}>Who do I want to become?</Text>
+            <Text style={styles.hint}>From "Atomic Habits": focus on identity, not results</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. I am a runner"
+              placeholderTextColor="#9CA3AF"
+              value={identityText}
+              onChangeText={setIdentityText}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>2-Minute Version</Text>
+            <Text style={styles.hint}>What's the smallest version of this habit?</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Put on running shoes"
+              placeholderTextColor="#9CA3AF"
+              value={miniVersion}
+              onChangeText={setMiniVersion}
+            />
+          </View>
+        </>
+      )}
 
       <TouchableOpacity
         style={[styles.submitButton, { backgroundColor: color }, !name.trim() && styles.buttonDisabled]}
@@ -303,6 +323,20 @@ const styles = StyleSheet.create({
   },
   dayTextActive: {
     color: '#fff',
+  },
+  advancedToggle: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    alignItems: 'center',
+  },
+  advancedToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
   },
   submitButton: {
     padding: 16,
