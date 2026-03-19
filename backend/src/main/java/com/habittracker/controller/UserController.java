@@ -18,7 +18,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCurrentUser(Authentication auth) {
         Long userId = (Long) auth.getPrincipal();
-        if (!userRepository.existsById(userId)) {
+        if (userId == null || !userRepository.existsById(userId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
         userRepository.deleteById(userId);
