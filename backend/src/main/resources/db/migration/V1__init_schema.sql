@@ -1,0 +1,71 @@
+-- Users
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255),
+    name VARCHAR(255),
+    avatar_url VARCHAR(500),
+    auth_provider VARCHAR(20) NOT NULL DEFAULT 'LOCAL',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Habits
+CREATE TABLE habits (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    color VARCHAR(7) NOT NULL DEFAULT '#4A90D9',
+    icon VARCHAR(100),
+    category VARCHAR(100),
+    identity_text VARCHAR(500),
+    mini_version VARCHAR(500),
+    frequency VARCHAR(20) NOT NULL DEFAULT 'DAILY',
+    custom_days VARCHAR(50),
+    reminder_time TIME,
+    position INT NOT NULL DEFAULT 0,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_habits_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_habits_user_archived ON habits(user_id, is_archived);
+
+-- Habit Completions
+CREATE TABLE habit_completions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    habit_id BIGINT NOT NULL,
+    completed_date DATE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_completions_habit FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE,
+    CONSTRAINT uk_completion_date UNIQUE (habit_id, completed_date)
+);
+
+CREATE INDEX idx_completions_habit_date ON habit_completions(habit_id, completed_date DESC);
+
+-- Freeze Days
+CREATE TABLE freeze_days (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    habit_id BIGINT NOT NULL,
+    freeze_date DATE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_freeze_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_freeze_habit FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE,
+    CONSTRAINT uk_freeze_date UNIQUE (user_id, habit_id, freeze_date)
+);
+
+-- Achievements
+CREATE TABLE achievements (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    habit_id BIGINT,
+    type VARCHAR(50) NOT NULL,
+    milestone_days INT,
+    unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_achievements_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_achievements_habit FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE SET NULL
+);
