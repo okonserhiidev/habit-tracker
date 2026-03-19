@@ -11,8 +11,10 @@ import javax.sql.DataSource;
 import java.net.URI;
 
 /**
- * Converts Render's DATABASE_URL (postgres://user:pass@host:port/db)
- * to a valid JDBC URL for Spring Boot.
+ * Configures DataSource for Render deployment.
+ * Handles two formats of DATABASE_URL:
+ *   1. Already JDBC: jdbc:postgresql://host/db?user=...&password=...
+ *   2. Render default: postgres://user:pass@host:port/db
  */
 @Configuration
 @Profile("prod")
@@ -23,25 +25,31 @@ public class RenderDataSourceConfig {
 
     @Bean
     public DataSource dataSource() {
-        URI dbUri = URI.create(databaseUrl.replace("postgres://", "postgresql://"));
-
-        String host = dbUri.getHost();
-        int port = dbUri.getPort() == -1 ? 5432 : dbUri.getPort();
-        String dbName = dbUri.getPath().substring(1); // strip leading /
-        String userInfo = dbUri.getUserInfo();
-        String username = userInfo.split(":")[0];
-        String password = userInfo.contains(":") ? userInfo.substring(userInfo.indexOf(':') + 1) : "";
-
-        String jdbcUrl = String.format("jdbc:postgresql://%s:%d/%s", host, port, dbName);
-
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(jdbcUrl);
-        config.setUsername(username);
-        config.setPassword(password);
-        config.setDriverClassName("org.postgresql.Driver");
         config.setMaximumPoolSize(5);
         config.setConnectionTimeout(30_000);
-        config.addDataSourceProperty("sslmode", "require");
+        config.setDriverClassName("org.postgresql.Driver");
+
+        if (databaseUrl.startsWith("jdbc:")) {
+            // Already in JDBC format — use as-is
+            config.setJdbcUrl(databaseUrl);
+        } else {
+            // Render default format: postgres://user:pass@host:port/db
+            String normalized = databaseUrl.replaceFirst("^postgres://", "postgresql://");
+            URI dbUri = URI.create(normalized);
+
+            String host = dbUri.getHost();
+            int port = dbUri.getPort() == -1 ? 5432 : dbUri.getPort();
+            String dbName = dbUri.getPath().substring(1);
+            String userInfo = dbUri.getUserInfo();
+            String username = userInfo.split(":")[0];
+            String password = userInfo.contains(":") ? userInfo.substring(userInfo.indexOf(':') + 1) : "";
+
+            config.setJdbcUrl(String.format("jdbc:postgresql://%s:%d/%s", host, port, dbName));
+            config.setUsername(username);
+            config.setPassword(password);
+            config.addDataSourceProperty("sslmode", "require");
+        }
 
         return new HikariDataSource(config);
     }
