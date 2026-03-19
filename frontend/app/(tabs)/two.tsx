@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, Modal } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -11,6 +11,7 @@ export default function SettingsScreen() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -18,29 +19,36 @@ export default function SettingsScreen() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This will permanently delete your account and all your habits. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeletingAccount(true);
-            try {
-              await userApi.deleteAccount();
-              await logout();
-              router.replace('/(auth)/login' as any);
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete account. Please try again.');
-            } finally {
-              setIsDeletingAccount(false);
-            }
-          },
-        },
-      ]
-    );
+    if (Platform.OS === 'web') {
+      setShowDeleteModal(true);
+    } else {
+      Alert.alert(
+        'Delete Account',
+        'This will permanently delete your account and all your habits. This cannot be undone.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: confirmDeleteAccount },
+        ]
+      );
+    }
+  };
+
+  const confirmDeleteAccount = async () => {
+    setShowDeleteModal(false);
+    setIsDeletingAccount(true);
+    try {
+      await userApi.deleteAccount();
+      await logout();
+      router.replace('/(auth)/login' as any);
+    } catch {
+      if (Platform.OS === 'web') {
+        window.alert('Failed to delete account. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to delete account. Please try again.');
+      }
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   const initials = user?.name
@@ -115,6 +123,32 @@ export default function SettingsScreen() {
           <Text style={styles.deleteText}>Delete Account</Text>
         )}
       </TouchableOpacity>
+
+      {/* Web-compatible delete confirmation modal */}
+      <Modal visible={showDeleteModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Delete Account</Text>
+            <Text style={styles.modalMessage}>
+              This will permanently delete your account and all your habits. This cannot be undone.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setShowDeleteModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalDelete}
+                onPress={confirmDeleteAccount}
+              >
+                <Text style={styles.modalDeleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -164,4 +198,29 @@ const styles = StyleSheet.create({
   },
   deleteButtonDisabled: { opacity: 0.5 },
   deleteText: { color: Colors.danger, fontSize: 16, fontWeight: '600' },
+
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center', alignItems: 'center', padding: 24,
+  },
+  modalBox: {
+    backgroundColor: '#fff', borderRadius: 16, padding: 24,
+    width: '100%', maxWidth: 360,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.light.text, marginBottom: 10 },
+  modalMessage: { fontSize: 15, color: Colors.light.textSecondary, lineHeight: 22, marginBottom: 24 },
+  modalButtons: { flexDirection: 'row', gap: 12 },
+  modalCancel: {
+    flex: 1, padding: 14, borderRadius: 12,
+    backgroundColor: Colors.light.background, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.light.border,
+  },
+  modalCancelText: { fontSize: 15, fontWeight: '600', color: Colors.light.text },
+  modalDelete: {
+    flex: 1, padding: 14, borderRadius: 12,
+    backgroundColor: '#FEE2E2', alignItems: 'center',
+  },
+  modalDeleteText: { fontSize: 15, fontWeight: '600', color: Colors.danger },
 });
