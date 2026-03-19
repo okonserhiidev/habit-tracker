@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Slot, useRouter } from 'expo-router';
@@ -10,6 +10,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuthStore } from '../store/useAuthStore';
 import Colors from '../constants/Colors';
+import { getItem } from '../utils/storage';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -28,13 +29,26 @@ function InitialRedirect() {
   const { isAuthenticated, isLoading, restoreSession } = useAuthStore();
   const router = useRouter();
   const didRedirect = useRef(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
   useEffect(() => {
     restoreSession();
   }, []);
 
   useEffect(() => {
-    if (isLoading || didRedirect.current) return;
+    let cancelled = false;
+    getItem('onboardingCompleted').then((value) => {
+      if (cancelled) return;
+      if (!value) {
+        router.replace('/onboarding' as any);
+      }
+      setCheckingOnboarding(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (isLoading || checkingOnboarding || didRedirect.current) return;
 
     didRedirect.current = true;
     if (isAuthenticated) {
@@ -42,9 +56,9 @@ function InitialRedirect() {
     } else {
       router.replace('/(auth)/login' as any);
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated, checkingOnboarding]);
 
-  if (isLoading) {
+  if (isLoading || checkingOnboarding) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FA' }}>
         <ActivityIndicator size="large" color={Colors.primary} />

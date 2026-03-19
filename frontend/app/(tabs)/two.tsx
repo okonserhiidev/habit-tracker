@@ -1,17 +1,46 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 import Colors from '../../constants/Colors';
+import { userApi } from '../../api/userApi';
 
 const APP_VERSION = '1.0.0';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     router.replace('/(auth)/login' as any);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your habits. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeletingAccount(true);
+            try {
+              await userApi.deleteAccount();
+              await logout();
+              router.replace('/(auth)/login' as any);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+            } finally {
+              setIsDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const initials = user?.name
@@ -73,6 +102,19 @@ export default function SettingsScreen() {
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>🚪  Log Out</Text>
       </TouchableOpacity>
+
+      {/* Delete Account */}
+      <TouchableOpacity
+        style={[styles.deleteButton, isDeletingAccount && styles.deleteButtonDisabled]}
+        onPress={handleDeleteAccount}
+        disabled={isDeletingAccount}
+      >
+        {isDeletingAccount ? (
+          <ActivityIndicator color={Colors.danger} size="small" />
+        ) : (
+          <Text style={styles.deleteText}>Delete Account</Text>
+        )}
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -115,4 +157,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8,
   },
   logoutText: { color: Colors.danger, fontSize: 16, fontWeight: '600' },
+
+  deleteButton: {
+    borderWidth: 1, borderColor: Colors.danger, borderRadius: 14, padding: 16,
+    alignItems: 'center', marginTop: 12, backgroundColor: 'transparent',
+  },
+  deleteButtonDisabled: { opacity: 0.5 },
+  deleteText: { color: Colors.danger, fontSize: 16, fontWeight: '600' },
 });
